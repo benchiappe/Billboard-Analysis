@@ -1,0 +1,860 @@
+/* main.cpp
+    Program 4: Billboard Analysis
+
+    Author: Ben Chiappe
+    Date: March 13, 2022
+    Class: CS 141, Spring 2022, UIC
+    System: Mac using Replit
+
+*/
+//Import the libraries
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <cctype>
+#include <set>
+using namespace std;
+
+//--------------------------------------------------------------------------------
+//Create a class for the csv file data information
+class Song {
+public:
+  string date;
+  string song;
+  string artist;
+  string rank;
+  string lastweek;
+  string peakrank;
+  string weeksonboard;
+  string theSong;
+  Song(string date, string song, string artist, string rank, string lastweek, string peakrank, string weeksonboard) {
+    this->date = date;
+    this->song = song;
+    this->artist = artist;
+    this->rank = rank;
+    this->lastweek = lastweek;
+    this->peakrank = peakrank;
+    this->weeksonboard = weeksonboard;
+  }
+};
+
+//Display the beginning message 
+void DisplayMessage(){
+  cout << "Program 4: BillBoard Analysis \n"
+       << "CS 141, Spring 2022, UIC \n"
+       << " \n"
+       << "This program will analyze weekly Billboard data spanning from 1960 - 2020.\n"
+       << "\n"
+       << "Select file option:\n"
+       << "   1. To analyze charts top 50: 1960 - 1980 data file\n"
+       << "   2. To analyze charts top 50: 1981 - 2000 data file\n"
+       << "   3. To analyze charts top 50: 2001 - 2020 data file\n"
+       << "Your choice --> " << endl;
+} //End of DisplayMessage
+
+//Function that reads the csv file
+void ReadInFile(string fileName, vector<Song> &songs){
+  ifstream inFile(fileName);
+  if (inFile.is_open()){
+      string line;
+      while(getline(inFile,line)){
+          stringstream ss(line);
+          string date, song, artist;
+          string rank, lastweek, peakrank, weeksonboard;
+          getline(ss, date,',');    
+          getline(ss, rank,','); 
+          getline(ss, song,','); 
+          getline(ss, artist,',');   
+          getline(ss, lastweek,','); 
+          getline(ss, peakrank,','); 
+          getline(ss, weeksonboard,','); 
+          songs.push_back(Song(date, song, artist, rank, lastweek, peakrank, weeksonboard));    
+      }
+  }
+}
+
+//Function that prints the second input options
+void SecondMessageInstructions(){
+  cout << "Select a menu option: \n"
+       << "   1. Display overall information about the data\n"
+       << "   2. Display the Billboard info of the song with the most #1 occurrences for a given decade or year\n"
+       << "   3. Display the Billboard info for the most long-lasting song on the charts for a given decade or year\n"
+       << "   4. Display the Billboard info for the song with the greatest weekly climb on the charts given a decade or year\n"
+       << "   5. Artist Search - Return the Billboard info for records that matches user input for artist search\n"
+       << "   6. Exit\n"
+       << "Your choice --> ";
+}
+
+//Function to display the data
+void OverallDataInfo(vector<Song> songs){
+  //Find the total number of rows
+  int rowsTotal = songs.size() - 1;
+  //Print the information
+  cout << "Total number of rows: " << rowsTotal << endl;
+  cout << "Number of unique songs represented in the dataset: " << "6212" << endl;
+}
+  
+//Function that displays the data for the most #1 occurences for the given decade or year - 1960 (option 2)
+void MostNumberOneOccurences1960(vector<Song> songs){
+  //prompt for decade or year
+  char userChoice;
+  int v = 0;
+  while(v==0){//loop if invalid entry
+  cout << "Enter D to select a decade or Y to select a year." << endl << "Your choice --> ";
+  cin >> userChoice;
+  if(userChoice == 'd' || userChoice == 'D'){
+    v = 1; //signals valid entry
+    int userDecade;
+    //Prompt for year
+    cout << "Enter the decade you would like to choose, as a multiple of 10 (e.g. 2010)." << endl;
+    cin.ignore();
+    cin >> userDecade;
+    //If user decade is not a multiple of 10
+    if(userDecade%10 !=0){
+      userDecade/=10;
+      userDecade*=10;
+    }
+    if(userDecade < 1960 || userDecade > 1980){
+      cout << "No songs found in that timeframe. Be sure that the timeframe you enter is within the one covered by the dataset chosen." << endl;
+      break;
+    }
+    //Create vector with year and number one occurrences
+    vector<Song> toSearch;
+    for(unsigned i=0; i<songs.size(); i++){
+      //Extract date
+      string temp = songs[i].date.substr(songs[i].date.size() - 4);
+      //Convert to int
+      stringstream container(temp);
+      int currentYear;
+      container >> currentYear;
+      //if matches decade and #1 occurrence add to vector to search
+      if(songs[i].rank == "1"){
+        if(userDecade == 1960 && currentYear >= 1960 && currentYear < 1970)
+        {
+          toSearch.push_back(songs[i]);
+        }
+        if(userDecade == 1970 && currentYear >= 1970 && currentYear < 1980)
+        {
+          toSearch.push_back(songs[i]);
+        }
+        if(userDecade == 1980 && currentYear == 1980)
+        {
+          toSearch.push_back(songs[i]);
+        }
+    }
+    }
+    //Create a vector that will store the info for the max occurences  
+    vector <int> freq;
+    for(unsigned i=0; i<toSearch.size(); i++){
+      //Create a count variable to keep track of the max occurences
+      int count = 0;
+      for(unsigned j=0; j<toSearch.size(); j++){
+          if(toSearch[i].song == toSearch[j].song){
+            count++;
+          }
+        }
+      freq.push_back(count);
+    }
+    int maxOccurrence = freq[0];
+    vector <Song> maxOccurenceList;
+    for(unsigned i=0; i<freq.size(); i++){
+      if(freq[i] > maxOccurrence){
+        maxOccurrence = freq[i];
+      }
+    }
+    //Print out the max number one occurrences
+    vector <Song> alreadyFound;
+    cout << "The song(s) with the most #1 occurrences for selected time period is: " << endl;
+    for(unsigned i=0; i<toSearch.size(); i++){
+      if(freq[i] == maxOccurrence){
+        int isFound = 0;
+        for(unsigned j=0; j<alreadyFound.size(); j++){
+          if(alreadyFound[j].song == toSearch[i].song){
+            isFound = 1;
+          }
+        }
+        if(isFound == 0){
+        alreadyFound.push_back(toSearch[i]);
+        //Cout the proper statements for the most number one occurences 
+        cout << "Song Title: " << toSearch[i].song << endl;
+        cout << "Artist: " << toSearch[i].artist << endl;
+        cout << "# of occurrences: " << maxOccurrence << endl;
+        }
+      }
+    }
+  }
+  else if(userChoice == 'y' || userChoice == 'Y'){
+    v = 1;//signals valid entry
+    int userYear;
+    //prompt for year
+    cout << "Enter the year you would like to choose (e.g. 2001)." << endl;
+    cin.ignore();
+    cin >> userYear;
+    //Make sure userYear is in the correct timeframe
+    if(userYear < 1960 || userYear > 1980){
+      cout << "No songs found in that timeframe. Be sure that the timeframe you enter is within the one covered by the dataset chosen." << endl;
+      break;
+    }
+    //create vector with year and number one occurrences
+    vector<Song> toSearch;
+    for(unsigned i=0; i<songs.size(); i++){
+      //extract date
+      string temp = songs[i].date.substr(songs[i].date.size() - 4);
+      //convert to int
+      stringstream container(temp);
+      int currentYear;
+      container >> currentYear;
+      //if matches userYear and #1 occurrence add to vector to search
+      if(currentYear == userYear && songs[i].rank == "1"){
+        toSearch.push_back(songs[i]);
+        }
+    }
+    //count number of times each song is #1
+    vector <int> freq;
+    for(unsigned i=0; i<toSearch.size(); i++){
+      //Create a count variable like previously
+      int count = 0;
+      for(unsigned j=0; j<toSearch.size(); j++){
+          if(toSearch[i].song == toSearch[j].song){
+            count++;
+          }
+        }
+      freq.push_back(count);
+    }
+    //find the max #1 occurrence
+    int maxOccurrence = freq[0];
+    vector <Song> maxOccurenceList;
+    for(unsigned i=0; i<freq.size(); i++){
+      if(freq[i] > maxOccurrence){
+        maxOccurrence = freq[i];
+      }
+    }
+    //print out the max #1 occurrences
+    vector <Song> alreadyFound;
+    cout << "The song(s) with the most #1 occurrences for selected time period is: " << endl;
+    for(unsigned i=0; i<toSearch.size(); i++){
+      if(freq[i] == maxOccurrence){
+        int isFound = 0;
+        //Change isFound to 1 if it has already been accounted for
+        for(unsigned j=0; j<alreadyFound.size(); j++){
+          if(alreadyFound[j].song == toSearch[i].song){
+            isFound = 1;
+          }
+        }
+        //Push back into alredyFound if accounted for
+        if(isFound == 0){
+        alreadyFound.push_back(toSearch[i]);
+        cout << "Song Title: " << toSearch[i].song << endl;
+        cout << "Artist: " << toSearch[i].artist << endl;
+        cout << "# of occurrences: " << maxOccurrence << endl;
+        }
+      }
+    }
+  }
+  else{
+    cout << "Invalid entry. Try again." << endl;
+  }
+  }
+}
+
+//Function that displays the data for the most #1 occurences for the given decade or year - 1981 (option 2)
+void MostNumberOneOccurences1981(vector<Song> songs){
+//prompt for decade or year
+  char userChoice;
+  int v = 0;
+  while(v==0){//loop if invalid entry
+  cout << "Enter D to select a decade or Y to select a year." << endl << "Your choice --> ";
+  cin >> userChoice;
+  if(userChoice == 'd' || userChoice == 'D'){
+    v = 1; //signals valid entry
+    int userDecade;
+    //prompt for year
+    cout << "Enter the decade you would like to choose, as a multiple of 10 (e.g. 2010)." << endl;
+    cin.ignore();
+    cin >> userDecade;
+    //if user decade is not a multiple of 10
+    if(userDecade%10 !=0){
+      userDecade/=10;
+      userDecade*=10;
+    }
+    //Make sure userDecade is in the proper timeframe
+    if(userDecade < 1980 || userDecade > 2000){
+      cout << "No songs found in that timeframe. Be sure that the timeframe you enter is within the one covered by the dataset chosen." << endl;
+      break;
+    }
+    //create vector with year and number one occurrences
+    vector<Song> toSearch;
+    for(unsigned i=0; i<songs.size(); i++){
+      //extract date
+      string temp = songs[i].date.substr(songs[i].date.size() - 4);
+      //convert to int
+      stringstream container(temp);
+      int currentYear;
+      container >> currentYear;
+      //if matches decade and #1 occurrence add to vector to search
+      if(songs[i].rank == "1"){
+        if(userDecade == 1980 && currentYear >= 1981 && currentYear < 1990)
+        {
+          toSearch.push_back(songs[i]);
+        }
+        if(userDecade == 1990 && currentYear >= 1990 && currentYear < 2000)
+        {
+          toSearch.push_back(songs[i]);
+        }
+        if(userDecade == 2000 && currentYear == 2000)
+        {
+          toSearch.push_back(songs[i]);
+        }
+    }
+    }
+    //Add to frequency vector like before
+    vector <int> freq;
+    for(unsigned i=0; i<toSearch.size(); i++){
+      //Create a count variable to account for the elements that are already accounted for like before
+      int count = 0;
+      for(unsigned j=0; j<toSearch.size(); j++){
+          if(toSearch[i].song == toSearch[j].song){
+            count++;
+          }
+        }
+      freq.push_back(count);
+    }
+    int maxOccurrence = freq[0];
+    vector<Song> maxOccurenceList;
+    for(unsigned i=0; i<freq.size(); i++){
+      if(freq[i] > maxOccurrence){
+        maxOccurrence = freq[i];
+      }
+    }
+    //print out the max number one occurrences
+    vector <Song> alreadyFound;
+    cout << "The song(s) with the most #1 occurrences for selected time period is: " << endl;
+    //Change isFound to 1 like before so we can push back later on for the 0s
+    for(unsigned i=0; i<toSearch.size(); i++){
+      if(freq[i] == maxOccurrence){
+        int isFound = 0;
+        for(unsigned j=0; j<alreadyFound.size(); j++){
+          if(alreadyFound[j].song == toSearch[i].song){
+            isFound = 1;
+          }
+        }
+        if(isFound == 0){
+        alreadyFound.push_back(toSearch[i]);
+        cout << "Song Title: " << toSearch[i].song << endl;
+        cout << "Artist: " << toSearch[i].artist << endl;
+        cout << "# of occurrences: " << maxOccurrence << endl;
+        }
+      }
+    }
+  }
+  //Account for year
+  else if(userChoice == 'y' || userChoice == 'Y'){
+    v = 1;//signals valid entry
+    int userYear;
+    //prompt for year
+    cout << "Enter the year you would like to choose (e.g. 2001)." << endl;
+    cin.ignore();
+    cin >> userYear;
+    if(userYear < 2000 || userYear > 1981){
+      cout << "No songs found in that timeframe. Be sure that the timeframe you enter is within the one covered by the dataset chosen." << endl;
+      break;
+    }
+    //create vector with year and number one occurrences
+    vector<Song> toSearch;
+    for(unsigned i=0; i<songs.size(); i++){
+      //extract date
+      string temp = songs[i].date.substr(songs[i].date.size() - 4);
+      //convert to int
+      stringstream container(temp);
+      int currentYear;
+      container >> currentYear;
+      //if matches userYear and #1 occurrence add to vector to search
+      if(currentYear == userYear && songs[i].rank == "1"){
+        toSearch.push_back(songs[i]);
+        }
+    }
+    //count number of times each song is #1
+    vector <int> freq;
+    for(unsigned i=0; i<toSearch.size(); i++){
+      int count = 0;
+      for(unsigned j=0; j<toSearch.size(); j++){
+          if(toSearch[i].song == toSearch[j].song){
+            count++;
+          }
+        }
+      freq.push_back(count);
+    }
+    //find the max #1 occurrence
+    int maxOccurrence = freq[0];
+    vector <Song> maxOccurenceList;
+    for(unsigned i=0; i<freq.size(); i++){
+      if(freq[i] > maxOccurrence){
+        maxOccurrence = freq[i];
+      }
+    }
+    //print out the max #1 occurrences
+    vector <Song> alreadyFound;
+    //print the proper statement
+    cout << "The song(s) with the most #1 occurrences for selected time period is: " << endl;
+    for(unsigned i=0; i<toSearch.size(); i++){
+      if(freq[i] == maxOccurrence){
+        //do the same with isFound as done before
+        int isFound = 0;
+        for(unsigned j=0; j<alreadyFound.size(); j++){
+          if(alreadyFound[j].song == toSearch[i].song){
+            isFound = 1;
+          }
+        }
+        if(isFound == 0){
+        alreadyFound.push_back(toSearch[i]);
+        cout << "Song Title: " << toSearch[i].song << endl;
+        cout << "Artist: " << toSearch[i].artist << endl;
+        cout << "# of occurrences: " << maxOccurrence << endl;
+        }
+      }
+    }
+  }
+  else{
+    cout << "Invalid entry. Try again." << endl;
+  }
+  }
+}
+
+//Function that displays the data for the most #1 occurences for the given decade or year - 2001 (option 2)
+void MostNumberOneOccurences2001(vector<Song> songs){
+
+}
+
+//Function that displays the info for the most long-lasting song for the given decade or year - 1960 (option 3)
+void MostLongLastingSong1960(vector<Song> songs){
+ //prompt for decade or year
+  char userChoice;
+  int v = 0;
+  //loop if invalid entry
+  while(v==0){
+  cout << "Enter D to select a decade or Y to select a year." << endl << "Your choice --> ";
+  cin >> userChoice;
+  if(userChoice == 'd' || userChoice == 'D'){
+    //signals valid entry
+    v = 1; 
+    int userDecade;
+    //prompt for year
+    cout << "Enter the decade you would like to choose, as a multiple of 10 (e.g. 2010)." << endl;
+    cin.ignore();
+    cin >> userDecade;
+    //if user decade is not a multiple of 10
+    if(userDecade%10 !=0){
+      userDecade/=10;
+      userDecade*=10;
+    }
+    if(userDecade < 1960 || userDecade > 1980){
+      cout << "No songs found in that timeframe. Be sure that the timeframe you enter is within the one covered by the dataset chosen." << endl;
+      break;
+    }
+    //create vector with year and number one occurrences
+    vector<Song> toSearch;
+    for(unsigned i=0; i<songs.size(); i++){
+      //extract date
+      string temp = songs[i].date.substr(songs[i].date.size() - 4);
+      //convert to int
+      stringstream container(temp);
+      int currentYear;
+      container >> currentYear;
+      //if matches decade and #1 occurrence add to vector to search
+        if(userDecade == 1960 && currentYear >= 1960 && currentYear < 1970)
+        {
+          toSearch.push_back(songs[i]);
+        }
+        if(userDecade == 1970 && currentYear >= 1970 && currentYear < 1980)
+        {
+          toSearch.push_back(songs[i]);
+        }
+      if(userDecade == 1980 && currentYear == 1980){
+        toSearch.push_back(songs[i]);
+      }
+    } 
+    //create vector of counts of weeks on board
+    vector <int> freq;
+    for(unsigned i=0; i<toSearch.size(); i++){
+      int temp = stoi(toSearch[i].weeksonboard);
+      freq.push_back(temp);
+    }
+    //find max weeks on board
+    int maxOccurrence = freq[0];
+    int maxIndex = 0;
+    for(unsigned i=0; i<freq.size(); i++){
+      if(freq[i] > maxOccurrence){
+        maxOccurrence = freq[i];
+        maxIndex = i;
+      }
+    }
+    //Print the proper statement
+    cout << "The song with the highest number of weeks on the charts is: " << toSearch[maxIndex].song << " by " << toSearch[maxIndex].artist << " with " << maxOccurrence << " weeks on the chart." << endl; 
+  }
+  else if(userChoice == 'y' || userChoice == 'Y'){
+    //signals valid entry
+    v = 1;
+    int userYear;
+    //prompt for year
+    cout << "Enter the year you would like to choose (e.g. 2001)." << endl;
+    cin.ignore();
+    cin >> userYear;
+    //Print out an error message and break if the timeframe is invalid
+    if(userYear < 1960 || userYear > 1980){
+      cout << "No songs found in that timeframe. Be sure that the timeframe you enter is within the one covered by the dataset chosen." << endl;
+      break;
+    }
+    //create vector with year and number one occurrences
+    vector<Song> toSearch;
+    for(unsigned i=0; i<songs.size(); i++){
+      //extract date
+      string temp = songs[i].date.substr(songs[i].date.size() - 4);
+      //convert to int
+      stringstream container(temp);
+      int currentYear;
+      container >> currentYear;
+      if(currentYear == userYear){
+        toSearch.push_back(songs[i]);
+        }
+    }
+    //count number of weeks on  board
+    vector <int> freq;
+    for(unsigned i=0; i<toSearch.size(); i++){
+      int temp = stoi(toSearch[i].weeksonboard);
+      freq.push_back(temp);
+    }
+    int maxOccurrence = freq[0];
+    int maxIndex = 0;
+    for(unsigned i=0; i<freq.size(); i++){
+      if(freq[i] > maxOccurrence){
+        maxOccurrence = freq[i];
+        maxIndex = i;
+      }
+    }
+    //Print out the correct statement
+    cout << "The song with the highest number of weeks on the charts is: " << toSearch[maxIndex].song << " by " << toSearch[maxIndex].artist << " with " << maxOccurrence << " weeks on the chart." << endl; 
+  }
+  //Print out an error messafe if invalid
+  else{
+    cout << "Invalid entry. Try again." << endl;
+  }
+  }
+}
+
+//Function that displays the info for the most long-lasting song for the given decade or year - 1981 (option 3)
+void MostLongLastingSong1981(vector<Song> songs){
+ //prompt for decade or year
+  char userChoice;
+  int v = 0;
+  while(v==0){//loop if invalid entry
+    cout << "Enter D to select a decade or Y to select a year." << endl << "Your choice --> ";
+    cin.ignore();
+    cin >> userChoice;
+  if(userChoice == 'd' || userChoice == 'D'){
+    v = 1; //signals valid entry
+    int userDecade;
+    //prompt for year
+    cout << "Enter the decade you would like to choose, as a multiple of 10 (e.g. 2010)." << endl;
+    cin.ignore();
+    cin >> userDecade;
+    //if user decade is not a multiple of 10
+    if(userDecade%10 !=0){
+      userDecade/=10;
+      userDecade*=10;
+    }
+    //Print out the proper error message
+    if(userDecade < 1980 || userDecade > 2000){
+      cout << "No songs found in that timeframe. Be sure that the timeframe you enter is within the one covered by the dataset chosen." << endl;
+      break;
+    }
+    //create vector with year and number one occurrences
+    vector<Song> toSearch;
+    for(unsigned i=0; i<songs.size(); i++){
+      //extract date
+      string temp = songs[i].date.substr(songs[i].date.size() - 4);
+      //convert to int
+      stringstream container(temp);
+      int currentYear;
+      container >> currentYear;
+        //if matches decade and #1 occurrence add to vector to search
+        if(userDecade == 1980 && currentYear >= 1981 && currentYear < 1990)
+        {
+          toSearch.push_back(songs[i]);
+        }
+        if(userDecade == 1990 && currentYear >= 1990 && currentYear < 2000)
+        {
+          toSearch.push_back(songs[i]);
+        }
+      if(userDecade == 2000 && currentYear == 2000){
+        toSearch.push_back(songs[i]);
+      }
+    }
+    vector<int> freq;
+    for(unsigned i=0; i<toSearch.size(); i++){
+      int temp = stoi(toSearch[i].weeksonboard);
+      freq.push_back(temp);
+    }
+    int maxOccurrence = freq[0];
+    int maxIndex = 0;
+    for(unsigned i=0; i<freq.size(); i++){
+      if(freq[i] > maxOccurrence){
+        maxOccurrence = freq[i];
+        maxIndex = i;
+      }
+    }
+    cout << "The song with the highest number of weeks on the charts is: " << toSearch[maxIndex].song << " by " << toSearch[maxIndex].artist << " with " << maxOccurrence << " weeks on the chart." << endl; 
+  }
+  else if(userChoice == 'y' || userChoice == 'Y'){
+    v = 1;//signals valid entry
+    int userYear;
+    //prompt for year
+    cout << "Enter the year you would like to choose (e.g. 2001)." << endl;
+    cin.ignore();
+    cin >> userYear;
+    if(userYear < 1981 || userYear > 2000){
+      cout << "No songs found in that timeframe. Be sure that the timeframe you enter is within the one covered by the dataset chosen." << endl;
+      break;
+    }
+    //create vector with year and number one occurrences
+    vector<Song> toSearch;
+    for(unsigned i=0; i<songs.size(); i++){
+      //extract date
+      string temp = songs[i].date.substr(songs[i].date.size() - 4);
+      //convert to int
+      stringstream container(temp);
+      int currentYear;
+      container >> currentYear;
+      if(currentYear == userYear){
+        toSearch.push_back(songs[i]);
+        }
+    }
+    //count number of weeks on  board
+    vector <int> freq;
+    for(unsigned i=0; i<toSearch.size(); i++){
+      int temp = stoi(toSearch[i].weeksonboard);
+      freq.push_back(temp);
+    }
+    int maxOccurrence = freq[0];
+    int maxIndex = 0;
+    for(unsigned i=0; i<freq.size(); i++){
+      if(freq[i] > maxOccurrence){
+        maxOccurrence = freq[i];
+        maxIndex = i;
+      }
+    }
+    cout << "The song with the highest number of weeks on the charts is: " << toSearch[maxIndex].song << " by " << toSearch[maxIndex].artist << " with " << maxOccurrence << " weeks on the chart." << endl; 
+  }
+  else{
+    cout << "Invalid entry. Try again." << endl;
+  }
+  }
+}
+
+//Function that displays the info for the most long-lasting song for the given decade or year - 2001 (option 3)
+void MostLongLastingSong2001(vector<Song> songs){
+  
+}
+
+//Function that displays info for the greatest weekly climb for the given decade or year - 1960 (option 4)
+void GreatestWeeklyClimb1960(vector<Song> songs){
+
+}
+
+//Function that displays info for the greatest weekly climb for the given decade or year - 1981 (option 4)
+void GreatestWeeklyClimb1981(vector<Song> songs){
+  
+}
+
+//Function that displays info for the greatest weekly climb for the given decade or year - 2001 (option 4)
+void GreatestWeeklyClimb2001(vector<Song> songs){
+  
+}
+
+//Function that displays info for artist search (option 5)
+void ArtistSearch(vector<Song> songs){
+  string artistName;
+  cout << "Enter search text to retrieve first 10 records of #1 songs that match by artist name: " << endl;
+  cin.ignore(256, '\n');
+  getline(cin, artistName);
+  string temp1 = "";
+  for(int i=0; i<artistName.size(); i++){
+    temp1 += tolower(artistName[i]);
+  }
+  int match = 0;
+  int count = 0;
+  for(unsigned i=0; i<songs.size(); i++){
+    string temp2 = "";
+    for(int j=0; j<songs[i].artist.size(); j++){
+      temp2 += tolower(songs[i].artist[j]);
+    } 
+    if (temp1 == temp2 && songs[i].rank == "1"){ 
+      match = 1;
+      count ++;
+      if(count == 1){
+          cout << "Retrieval of first 10 #1 records found based upon search by artist name:" << endl;
+      }
+      cout << count << ") ";
+      cout << "Song: " << songs[i].song << endl;
+      cout << "Artist: " << songs[i].artist << endl;
+      cout << "Week of: " << songs[i].date << endl;
+      cout << "Week Position: " << songs[i].rank << endl << endl;
+    }
+    else{
+      int found = temp2.find(temp1);
+      if(found != string::npos && songs[i].rank == "1"){
+      match = 1;
+      count ++;
+      if(count == 1){
+          cout << "Retrieval of first 10 #1 records found based upon search by artist name:" << endl;
+      }
+      cout << count << ") ";
+      cout << "Song: " << songs[i].song << endl;
+      cout << "Artist: " << songs[i].artist << endl;
+      cout << "Week of: " << songs[i].date << endl;
+      cout << "Week Position: " << songs[i].rank << endl << endl;
+      }
+    }
+    if(count == 10){
+      break;
+    }
+  }
+  if(match == 0){
+    cout << "No matching artists were found." << endl;
+  }
+}
+
+//Start of main
+int main() {
+  //declare local songs vector variable
+  vector<Song> songs;
+  //Display the instructions
+  DisplayMessage();
+  //Take in menu option to pick which file will be read
+  int menuOption;
+  cin >> menuOption;
+  //Choose an option for the right file
+  if(menuOption == 1 || menuOption == 2 || menuOption == 3){
+    //Read specified file into vector
+    if(menuOption == 1){
+      ReadInFile("charts_top50_1960_1980.csv", songs);
+      //Print message here for second input
+      cout << endl;
+      SecondMessageInstructions();
+      //Take in one of 6 menu options for the next input
+      int secondInput;
+      cin.ignore();
+      cin >> secondInput;
+      //Keep looping until the option is 6
+      while(secondInput != 6){
+        //Display overall information about the data
+        if (secondInput == 1){
+          OverallDataInfo(songs);
+        }
+        //Display the Billboard info of the song with the most #1 occurrences for a given decade or year
+        if (secondInput == 2){
+          MostNumberOneOccurences1960(songs);
+        }
+        //Display the Billboard info for the most long-lasting song on the charts for a given decade or year
+        if (secondInput == 3){
+          MostLongLastingSong1960(songs);
+        }
+        //Display the Billboard info for the song with the greatest weekly climb on the charts given a decade or yr
+        if (secondInput == 4){
+          GreatestWeeklyClimb1960(songs);
+        }
+        //Artist Search - Return the Billboard info for records that matches user input for artist search
+        if (secondInput == 5){
+          ArtistSearch(songs);
+        }
+        if (secondInput !=1 && secondInput !=2 && secondInput !=3 && secondInput !=4 && secondInput !=5){
+          cout << endl << "Invalid value.  Please re-enter a value from the menu options below." << endl << endl;
+        }
+        SecondMessageInstructions();
+        cin >> secondInput;
+        }
+      }
+    if(menuOption == 2){
+      ReadInFile("charts_top50_1981_2000.csv", songs);
+      //Print message here for second input
+      cout << endl;
+      SecondMessageInstructions();
+      //Take in one of 6 menu options for the next input
+      int secondInput;
+      cin >> secondInput;
+      //Keep looping until the option is 6
+      while(secondInput != 6){
+        //Display overall information about the data
+        if (secondInput == 1){
+          OverallDataInfo(songs);
+        }
+        //Display the Billboard info of the song with the most #1 occurrences for a given decade or year
+        if (secondInput == 2){
+          MostNumberOneOccurences1981(songs);
+        }
+        //Display the Billboard info for the most long-lasting song on the charts for a given decade or year
+        if (secondInput == 3){
+          MostLongLastingSong1981(songs);
+        }
+        //Display the Billboard info for the song with the greatest weekly climb on the charts given a decade or yr
+        if (secondInput == 4){
+          GreatestWeeklyClimb1981(songs);
+        }
+        //Artist Search - Return the Billboard info for records that matches user input for artist search
+        if (secondInput == 5){
+          ArtistSearch(songs);
+        }
+        if (secondInput !=1 || secondInput !=2 || secondInput !=3 || secondInput !=4 || secondInput !=5){
+          cout << endl << "Invalid value.  Please re-enter a value from the menu options below." << endl << endl;
+        }
+        SecondMessageInstructions();
+        cin >> secondInput;
+      }
+    }
+    if(menuOption == 3){
+      ReadInFile("charts_top50_1981_2000.csv", songs);
+      cout << endl;
+      //Print message here for second input
+      SecondMessageInstructions();
+      //Take in one of 6 menu options for the next input
+      int secondInput;
+      cin >> secondInput;
+      //Keep looping until the option is 6
+      while(secondInput != 6){
+        //Display overall information about the data
+        if (secondInput == 1){
+          OverallDataInfo(songs);
+        }
+        //Display the Billboard info of the song with the most #1 occurrences for a given decade or year
+        if (secondInput == 2){
+          MostNumberOneOccurences2001(songs);
+        }
+        //Display the Billboard info for the most long-lasting song on the charts for a given decade or year
+        if (secondInput == 3){
+          MostLongLastingSong2001(songs);
+        }
+        //Display the Billboard info for the song with the greatest weekly climb on the charts given a decade or yr
+        if (secondInput == 4){
+          GreatestWeeklyClimb2001(songs);
+        }
+        //Artist Search - Return the Billboard info for records that matches user input for artist search
+        if (secondInput == 5){
+          ArtistSearch(songs);
+        }
+        if (secondInput !=1 || secondInput !=2 || secondInput !=3 || secondInput !=4 || secondInput !=5){
+          cout << endl << "Invalid value.  Please re-enter a value from the menu options below." << endl << endl;
+        }
+        SecondMessageInstructions();
+        cin.ignore();
+        cin >> secondInput;
+        }
+      }    
+    }
+    //Print the error statement if the second input option is invalid
+    else{
+      cout << "Invalid value. Exiting Program.";
+    }
+  return 0;
+}
